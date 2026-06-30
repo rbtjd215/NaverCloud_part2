@@ -1,0 +1,74 @@
+# ══════════════════════════════════════════
+# SafeSync — docker-compose.yml
+# 로컬 개발 환경 (MySQL + 백엔드 + 프론트엔드)
+# ══════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  # ── MySQL (로컬 개발용) ──
+  db:
+    image: mysql:8.0
+    container_name: safesync-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: safesync
+      MYSQL_USER: safesync_user
+      MYSQL_PASSWORD: safesync_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI 백엔드 ──
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: safesync-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: safesync
+      DB_USER: safesync_user
+      DB_PASSWORD: safesync_pass
+      CLOUD_PROVIDER: NCP
+      CLOUD_REGION: KR-1
+      DEBUG: "true"
+      # 아래 키는 실제 발급 후 입력
+      CLOVA_STUDIO_API_KEY: ${CLOVA_STUDIO_API_KEY:-}
+      CLOVA_STUDIO_REQUEST_ID: ${CLOVA_STUDIO_REQUEST_ID:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Nginx (프론트엔드 정적 파일 서빙) ──
+  frontend:
+    image: nginx:alpine
+    container_name: safesync-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html
+      - ./style.css:/usr/share/nginx/html/style.css
+      - ./app.js:/usr/share/nginx/html/app.js
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeSync — 국가 재난·응급 알림 포털</title>
+  <meta name="description" content="재난 상황에서 절대 멈추지 않는 국가 재난 알림 포털. 네이버 클라우드 + AWS 멀티 클라우드 DR 아키텍처로 구현된 SafeSync." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       HEADER / NAV
+  ═══════════════════════════════════════════ -->
+  <header class="header" id="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="18" stroke="url(#grad1)" stroke-width="2.5"/>
+            <path d="M20 10 L20 22 M20 26 L20 28" stroke="url(#grad1)" stroke-width="3" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="40" y2="40">
+                <stop offset="0%" stop-color="#ff4444"/>
+                <stop offset="100%" stop-color="#ff8800"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-main">SafeSync</span>
+          <span class="logo-sub">국가 재난·응급 알림 포털</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#dashboard" class="nav-link active" id="nav-dashboard">현황판</a>
+        <a href="#shelters" class="nav-link" id="nav-shelters">대피소</a>
+        <a href="#subscribe" class="nav-link" id="nav-subscribe">알림 구독</a>
+        <a href="#admin" class="nav-link nav-admin" id="nav-admin">관리자</a>
+      </nav>
+      <div class="header-status">
+        <div class="cloud-badge" id="cloud-badge-primary">
+          <span class="badge-dot"></span>
+          <span class="badge-text">NCP Primary</span>
+        </div>
+        <button class="report-btn" id="open-report-modal">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm1 11H9v-2h2v2zm0-4H9V6h2v3z"/></svg>
+          재난 신고
+        </button>
+      </div>
+    </div>
+    <!-- 실시간 긴급 알림 띠 -->
+    <div class="alert-ticker" id="alert-ticker">
+      <div class="ticker-label">🚨 긴급</div>
+      <div class="ticker-content">
+        <span id="ticker-text">경기 수원시 영통구 일대 가스 누출 사고 발생 — 주민 대피 권고 중 &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; 서울 마포구 홍수 경보 발령 — 한강 수위 위험 수준 &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; 강원 속초시 산불 2단계 진화 작업 진행 중</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ─── 섹션: 대시보드 ─── -->
+    <section class="section active" id="dashboard">
+
+      <!-- 상단 통계 카드 -->
+      <div class="stats-row">
+        <div class="stat-card critical">
+          <div class="stat-icon">🔴</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-critical">3</div>
+            <div class="stat-label">심각 재난</div>
+          </div>
+          <div class="stat-pulse"></div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-icon">🟠</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-warning">7</div>
+            <div class="stat-label">주의 재난</div>
+          </div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-icon">🟡</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-info">12</div>
+            <div class="stat-label">모니터링 중</div>
+          </div>
+        </div>
+        <div class="stat-card safe">
+          <div class="stat-icon">🟢</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-shelters">248</div>
+            <div class="stat-label">운영 대피소</div>
+          </div>
+        </div>
+        <div class="stat-card people">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-people">14,302</div>
+            <div class="stat-label">대피 인원</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 지도 + 재난 목록 2단 레이아웃 -->
+      <div class="content-grid">
+        <!-- 지도 패널 -->
+        <div class="map-panel glass-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <span class="panel-icon">🗺️</span> 실시간 재난 현황 지도
+            </h2>
+            <div class="map-legend">
+              <span class="legend-item"><span class="legend-dot critical"></span> 심각</span>
+              <span class="legend-item"><span class="legend-dot warning"></span> 주의</span>
+              <span class="legend-item"><span class="legend-dot low"></span> 모니터링</span>
+            </div>
+          </div>
+          <div class="map-container" id="map-container">
+            <!-- 인터랙티브 SVG 한국 지도 -->
+            <div class="map-placeholder">
+              <svg class="korea-map" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+                <!-- 한국 지도 간략화 -->
+                <defs>
+                  <filter id="glow-red">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="glow-orange">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <radialGradient id="mapBg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#1a2040"/>
+                    <stop offset="100%" stop-color="#0d1020"/>
+                  </radialGradient>
+                </defs>
+                <rect width="400" height="500" fill="url(#mapBg)" rx="12"/>
+                <!-- 그리드 라인 -->
+                <g stroke="#ffffff08" stroke-width="1">
+                  <line x1="0" y1="100" x2="400" y2="100"/>
+                  <line x1="0" y1="200" x2="400" y2="200"/>
+                  <line x1="0" y1="300" x2="400" y2="300"/>
+                  <line x1="0" y1="400" x2="400" y2="400"/>
+                  <line x1="100" y1="0" x2="100" y2="500"/>
+                  <line x1="200" y1="0" x2="200" y2="500"/>
+                  <line x1="300" y1="0" x2="300" y2="500"/>
+                </g>
+                <!-- 한반도 외곽선 (간략화) -->
+                <path d="M160 30 L200 25 L230 40 L255 60 L260 90 L250 120 L270 150 L280 180 L270 210 L275 240 L265 270 L250 300 L240 330 L230 360 L220 390 L210 420 L200 450 L190 430 L185 400 L175 370 L165 340 L155 310 L145 280 L140 250 L135 220 L130 190 L140 160 L145 130 L140 100 L145 70 L155 45 Z"
+                      fill="#1e2d5a" stroke="#3a4a8a" stroke-width="1.5" opacity="0.8"/>
+                <!-- 재난 마커 — 심각 -->
+                <g id="marker-suwon" class="disaster-marker" data-id="1">
+                  <circle cx="190" cy="200" r="14" fill="#ff444440" filter="url(#glow-red)"/>
+                  <circle cx="190" cy="200" r="8" fill="#ff4444" class="pulse-circle"/>
+                  <text x="190" y="204" text-anchor="middle" font-size="9" fill="white" font-weight="bold">가스</text>
+                </g>
+                <g id="marker-mapo" class="disaster-marker" data-id="2">
+                  <circle cx="178" cy="175" r="12" fill="#ff444430" filter="url(#glow-red)"/>
+                  <circle cx="178" cy="175" r="7" fill="#ff4444" class="pulse-circle"/>
+                  <text x="178" y="179" text-anchor="middle" font-size="9" fill="white" font-weight="bold">홍수</text>
+                </g>
+                <!-- 재난 마커 — 주의 -->
+                <g id="marker-sokcho" class="disaster-marker" data-id="3">
+                  <circle cx="240" cy="145" r="11" fill="#ff880040"/>
+                  <circle cx="240" cy="145" r="6" fill="#ff8800"/>
+                  <text x="240" y="149" text-anchor="middle" font-size="9" fill="white" font-weight="bold">산불</text>
+                </g>
+                <g id="marker-busan" class="disaster-marker" data-id="4">
+                  <circle cx="230" cy="360" r="10" fill="#ff880035"/>
+                  <circle cx="230" cy="360" r="6" fill="#ff8800"/>
+                  <text x="230" y="364" text-anchor="middle" font-size="9" fill="white" font-weight="bold">태풍</text>
+                </g>
+                <g id="marker-jeonju" class="disaster-marker" data-id="5">
+                  <circle cx="180" cy="310" r="9" fill="#ffcc0030"/>
+                  <circle cx="180" cy="310" r="5" fill="#ffcc00"/>
+                  <text x="180" y="314" text-anchor="middle" font-size="8" fill="white" font-weight="bold">침수</text>
+                </g>
+                <!-- 지역명 -->
+                <text x="178" y="162" text-anchor="middle" font-size="10" fill="#ffffff60">서울</text>
+                <text x="240" y="132" text-anchor="middle" font-size="10" fill="#ffffff60">강원</text>
+                <text x="220" y="270" text-anchor="middle" font-size="10" fill="#ffffff60">경북</text>
+                <text x="175" y="330" text-anchor="middle" font-size="10" fill="#ffffff60">전북</text>
+                <text x="215" y="380" text-anchor="middle" font-size="10" fill="#ffffff60">부산</text>
+              </svg>
+              <div class="map-overlay-text">클릭하여 재난 상세 정보 확인</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 재난 목록 패널 -->
+        <div class="list-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <span class="panel-icon">📋</span> 진행 중인 재난
+            </h2>
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-filter="all">전체</button>
+              <button class="filter-tab" data-filter="CRITICAL">심각</button>
+              <button class="filter-tab" data-filter="HIGH">경보</button>
+              <button class="filter-tab" data-filter="MEDIUM">주의</button>
+            </div>
+          </div>
+          <div class="disaster-list" id="disaster-list">
+            <!-- JS로 렌더링 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 행동 요령 섹션 -->
+      <div class="ai-section glass-card" id="ai-section">
+        <div class="ai-header">
+          <div class="ai-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            CLOVA AI 행동 요령
+          </div>
+          <span class="ai-powered">Powered by CLOVA Studio</span>
+        </div>
+        <div class="ai-input-row">
+          <input type="text" class="ai-input" id="ai-situation-input" placeholder="현재 상황을 입력하세요 (예: 건물 3층에 화재가 발생했어요)" />
+          <button class="ai-generate-btn" id="ai-generate-btn">
+            <span class="btn-text">AI 안내 생성</span>
+            <span class="btn-loader hidden" id="ai-loader">⏳</span>
+          </button>
+        </div>
+        <div class="ai-result" id="ai-result">
+          <div class="ai-result-placeholder">
+            <div class="ai-icon-big">🤖</div>
+            <p>상황을 입력하고 <strong>AI 안내 생성</strong> 버튼을 누르면,<br/>CLOVA Studio가 맞춤형 행동 요령을 즉시 알려드립니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 섹션: 대피소 ─── -->
+    <section class="section" id="shelters">
+      <div class="section-header-row">
+        <h2 class="section-title">🏠 실시간 대피소 현황</h2>
+        <div class="shelter-search-wrap">
+          <input type="text" class="shelter-search" id="shelter-search" placeholder="지역명으로 검색 (예: 수원, 마포)" />
+        </div>
+      </div>
+      <div class="shelter-grid" id="shelter-grid">
+        <!-- JS로 렌더링 -->
+      </div>
+    </section>
+
+    <!-- ─── 섹션: 알림 구독 ─── -->
+    <section class="section" id="subscribe">
+      <div class="subscribe-container">
+        <div class="subscribe-card glass-card">
+          <div class="subscribe-icon">🔔</div>
+          <h2 class="subscribe-title">재난 알림 구독</h2>
+          <p class="subscribe-desc">관심 지역의 재난 발생 시 즉시 이메일 알림을 받으세요.</p>
+          <form class="subscribe-form" id="subscribe-form">
+            <div class="form-group">
+              <label class="form-label">이메일 주소</label>
+              <input type="email" class="form-input" id="sub-email" placeholder="your@email.com" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">관심 지역 선택</label>
+              <div class="region-chips" id="region-chips">
+                <button type="button" class="region-chip" data-region="서울">서울</button>
+                <button type="button" class="region-chip" data-region="경기">경기</button>
+                <button type="button" class="region-chip" data-region="강원">강원</button>
+                <button type="button" class="region-chip" data-region="충청">충청</button>
+                <button type="button" class="region-chip" data-region="전라">전라</button>
+                <button type="button" class="region-chip" data-region="경상">경상</button>
+                <button type="button" class="region-chip" data-region="제주">제주</button>
+                <button type="button" class="region-chip" data-region="전국">전국</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">알림 심각도</label>
+              <div class="severity-select-row">
+                <label class="radio-label"><input type="radio" name="severity" value="ALL" checked/> 전체</label>
+                <label class="radio-label"><input type="radio" name="severity" value="HIGH"/> 심각·경보만</label>
+                <label class="radio-label"><input type="radio" name="severity" value="CRITICAL"/> 심각만</label>
+              </div>
+            </div>
+            <button type="submit" class="subscribe-submit-btn" id="subscribe-submit-btn">구독 신청</button>
+          </form>
+          <div class="subscribe-success hidden" id="subscribe-success">
+            <div class="success-icon">✅</div>
+            <p class="success-msg">알림 구독이 완료되었습니다!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 섹션: 관리자 콘솔 ─── -->
+    <section class="section" id="admin">
+      <div class="admin-login-wall" id="admin-login-wall">
+        <div class="admin-login-card glass-card">
+          <div class="admin-lock-icon">🔒</div>
+          <h2>관리자 로그인</h2>
+          <form id="admin-login-form">
+            <input type="text" class="form-input" id="admin-id" placeholder="관리자 ID" />
+            <input type="password" class="form-input" id="admin-pw" placeholder="비밀번호" />
+            <button type="submit" class="subscribe-submit-btn">로그인</button>
+          </form>
+          <p class="admin-hint">데모: ID = <code>admin</code> / PW = <code>safesync2024</code></p>
+        </div>
+      </div>
+      <div class="admin-console hidden" id="admin-console">
+        <!-- 클라우드 상태 -->
+        <div class="admin-section-title">☁️ 멀티 클라우드 인프라 상태</div>
+        <div class="cloud-status-grid">
+          <div class="cloud-card ncp glass-card" id="ncp-cloud-card">
+            <div class="cloud-card-header">
+              <div class="cloud-logo">NCP</div>
+              <div class="cloud-status-badge online" id="ncp-status-badge">● ONLINE</div>
+            </div>
+            <div class="cloud-role-badge primary">PRIMARY</div>
+            <div class="cloud-metrics">
+              <div class="metric"><span class="metric-label">WAS 서버</span><span class="metric-val" id="ncp-was">2 / 2 가동 중</span></div>
+              <div class="metric"><span class="metric-label">Load Balancer</span><span class="metric-val green">정상</span></div>
+              <div class="metric"><span class="metric-label">Cloud DB (Master)</span><span class="metric-val green" id="ncp-db">정상 (R/W)</span></div>
+              <div class="metric"><span class="metric-label">CPU 사용률</span><span class="metric-val" id="ncp-cpu">23%</span></div>
+              <div class="metric"><span class="metric-label">응답 시간</span><span class="metric-val" id="ncp-latency">45ms</span></div>
+              <div class="metric"><span class="metric-label">트래픽 비중</span><span class="metric-val" id="ncp-traffic">100%</span></div>
+            </div>
+            <div class="cloud-health-bar">
+              <div class="health-fill ncp-fill" id="ncp-health-fill" style="width:100%"></div>
+            </div>
+          </div>
+
+          <div class="failover-arrow" id="failover-arrow">
+            <div class="arrow-line"></div>
+            <div class="arrow-label" id="arrow-label">정상 운영 중</div>
+            <div class="arrow-line"></div>
+          </div>
+
+          <div class="cloud-card aws glass-card" id="aws-cloud-card">
+            <div class="cloud-card-header">
+              <div class="cloud-logo aws-logo">AWS</div>
+              <div class="cloud-status-badge standby" id="aws-status-badge">● STANDBY</div>
+            </div>
+            <div class="cloud-role-badge dr">DR BACKUP</div>
+            <div class="cloud-metrics">
+              <div class="metric"><span class="metric-label">EC2 서버</span><span class="metric-val" id="aws-was">2 / 2 대기 중</span></div>
+              <div class="metric"><span class="metric-label">ALB</span><span class="metric-val green">정상</span></div>
+              <div class="metric"><span class="metric-label">RDS (Slave)</span><span class="metric-val yellow" id="aws-db">복제 동기화 중</span></div>
+              <div class="metric"><span class="metric-label">CPU 사용률</span><span class="metric-val" id="aws-cpu">3%</span></div>
+              <div class="metric"><span class="metric-label">Replication Lag</span><span class="metric-val" id="aws-lag">0.3s</span></div>
+              <div class="metric"><span class="metric-label">트래픽 비중</span><span class="metric-val" id="aws-traffic">0%</span></div>
+            </div>
+            <div class="cloud-health-bar">
+              <div class="health-fill aws-fill" id="aws-health-fill" style="width:30%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DR Failover 컨트롤 -->
+        <div class="dr-control-panel glass-card" id="dr-control-panel">
+          <div class="dr-panel-header">
+            <div class="dr-panel-title">
+              <span class="dr-icon">⚡</span>
+              DR Failover 제어판
+            </div>
+            <div class="dr-status-indicator" id="dr-status-indicator">
+              <span class="dr-dot green-dot"></span>
+              <span id="dr-status-text">정상 운영 중 — NCP Primary Active</span>
+            </div>
+          </div>
+          <div class="dr-actions">
+            <button class="dr-btn danger" id="btn-failover" onclick="triggerFailover()">
+              🔴 NCP 장애 발생 (DR 시연)
+            </button>
+            <button class="dr-btn success hidden" id="btn-recover" onclick="triggerRecover()">
+              🟢 NCP 복구 및 Failback
+            </button>
+            <button class="dr-btn info" id="btn-health-check" onclick="runHealthCheck()">
+              🔍 Health Check 실행
+            </button>
+          </div>
+          <div class="dr-log-area" id="dr-log-area">
+            <div class="dr-log-header">시스템 로그</div>
+            <div class="dr-log-content" id="dr-log-content">
+              <div class="log-line info">[2026-06-30 15:30:00] ✅ System started — NCP Primary Active</div>
+              <div class="log-line info">[2026-06-30 15:30:01] ✅ Route 53 Health Check: NCP OK (45ms)</div>
+              <div class="log-line info">[2026-06-30 15:30:01] ✅ DB Replication: NCP(Master) → AWS(Slave) 동기화 정상</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 재난 관리 -->
+        <div class="admin-section-title" style="margin-top:2rem">📋 재난 발령 관리</div>
+        <div class="admin-disaster-tools glass-card">
+          <button class="admin-tool-btn" id="btn-add-disaster">+ 새 재난 발령</button>
+          <button class="admin-tool-btn secondary" id="btn-resolve-all">전체 해제</button>
+        </div>
+        <div class="admin-disaster-table-wrap glass-card">
+          <table class="admin-table" id="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th><th>유형</th><th>지역</th><th>심각도</th><th>상태</th><th>신고 시각</th><th>조치</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       재난 신고 모달
+  ═══════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="report-modal-overlay">
+    <div class="modal glass-card" id="report-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🚨 재난 신고</h3>
+        <button class="modal-close" id="close-report-modal">&times;</button>
+      </div>
+      <form class="modal-form" id="report-form">
+        <div class="form-group">
+          <label class="form-label">재난 유형 *</label>
+          <div class="type-chips" id="type-chips">
+            <button type="button" class="type-chip" data-type="FIRE">🔥 화재</button>
+            <button type="button" class="type-chip" data-type="FLOOD">🌊 홍수/침수</button>
+            <button type="button" class="type-chip" data-type="EARTHQUAKE">🌍 지진</button>
+            <button type="button" class="type-chip" data-type="CHEMICAL">☣️ 화학 누출</button>
+            <button type="button" class="type-chip" data-type="TYPHOON">🌀 태풍</button>
+            <button type="button" class="type-chip" data-type="OTHER">⚠️ 기타</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">제목 *</label>
+          <input type="text" class="form-input" id="report-title" placeholder="예: 영통구 아파트 단지 내 가스 누출 발생" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">상세 내용</label>
+          <textarea class="form-input form-textarea" id="report-desc" rows="3" placeholder="현재 상황을 자세히 설명해 주세요. AI가 맞춤형 행동 요령을 생성합니다."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label class="form-label">지역 *</label>
+            <input type="text" class="form-input" id="report-region" placeholder="예: 경기 수원시 영통구" required />
+          </div>
+          <div class="form-group half">
+            <label class="form-label">심각도 *</label>
+            <select class="form-input form-select" id="report-severity">
+              <option value="MEDIUM">주의</option>
+              <option value="HIGH">경보</option>
+              <option value="CRITICAL">심각</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="modal-cancel-btn" id="modal-cancel-btn">취소</button>
+          <button type="submit" class="modal-submit-btn">신고 제출</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 재난 상세 정보 모달 -->
+  <div class="modal-overlay hidden" id="detail-modal-overlay">
+    <div class="modal glass-card" id="detail-modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detail-modal-title">재난 상세 정보</h3>
+        <button class="modal-close" id="close-detail-modal">&times;</button>
+      </div>
+      <div class="detail-modal-content" id="detail-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Toast 알림 -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <strong>SafeSync</strong> — 국가 재난·응급 알림 포털
+        <span class="footer-tech">멀티 클라우드 DR 아키텍처 (NCP Primary + AWS DR)</span>
+      </div>
+      <div class="footer-right">
+        <span class="footer-uptime">시스템 가동률: <strong id="uptime">99.99%</strong></span>
+        <span class="footer-cloud" id="footer-cloud-info">현재 서빙: NCP Primary</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

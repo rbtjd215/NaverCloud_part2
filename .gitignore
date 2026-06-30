@@ -1,0 +1,25 @@
+# Environments
+.env
+.env.*
+!.env.example
+
+# Keys & Secrets
+*.pem
+*.key
+*.cert
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# Mac/Windows OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
